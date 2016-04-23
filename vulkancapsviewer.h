@@ -44,6 +44,7 @@ private:
     QString vulkanApiVersion;
 	int selectedDeviceIndex = 0;
 	VkInstance vkInstance;
+    VkSurfaceKHR vkSurface;
 	VulkanDatabase databaseConnection;
 	Ui::vulkanCapsViewerClass ui;
 	settings appSettings;
@@ -72,6 +73,7 @@ private:
 	void displayDeviceQueues(VulkanDeviceInfo *device);
 	void displayGlobalLayers(QTreeWidget *tree);
 	void displayGlobalExtensions();
+    void displaySurfaceProperties(VulkanDeviceInfo *device);
 	void exportReportAsJSON(std::string fileName, std::string submitter, std::string comment);
 private Q_SLOTS:
 	void slotClose();

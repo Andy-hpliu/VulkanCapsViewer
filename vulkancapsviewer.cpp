@@ -47,6 +47,45 @@
 
 #define VK_API_VERSION VK_MAKE_VERSION(1, 0, 3)
 
+QTreeWidgetItem *addTreeItem(QTreeWidgetItem *parent, std::string key, std::string value)
+{
+    QTreeWidgetItem *newItem = new QTreeWidgetItem(parent);
+    newItem->setText(0, QString::fromStdString(key));
+    newItem->setText(1, QString::fromStdString(value));
+    parent->addChild(newItem);
+    return newItem;
+}
+
+QTreeWidgetItem *addTreeItemVkBool32(QTreeWidgetItem *parent, std::string key, VkBool32 value)
+{
+    QTreeWidgetItem *newItem = new QTreeWidgetItem(parent);
+    newItem->setText(0, QString::fromStdString(key));
+    newItem->setText(1, (value) ? "true" : "false");
+    newItem->setTextColor(1, (value) ? QColor::fromRgb(0, 128, 0) : QColor::fromRgb(255, 0, 0));
+    parent->addChild(newItem);
+    return newItem;
+}
+
+void addFlagTreeItem(QTreeWidgetItem *parent, QString flagName, bool flag)
+{
+    if (flag)
+    {
+        QTreeWidgetItem *newItem = new QTreeWidgetItem(parent);
+        newItem->setText(0, flagName);
+        parent->addChild(newItem);
+    }
+}
+
+void addFlagModelItem(QStandardItem *parent, QString flagName, bool flag)
+{
+    if (flag)
+    {
+        QList<QStandardItem *> flagItems;
+        flagItems << new QStandardItem(flagName);
+        parent->appendRow(flagItems);
+    }
+}
+
 /// <summary>
 ///	Returns operating system name
 /// </summary>
@@ -304,6 +343,137 @@ void vulkanCapsViewer::displayGlobalExtensions()
 	}
 }
 
+void vulkanCapsViewer::displaySurfaceProperties(VulkanDeviceInfo *device)
+{    
+    if (vkSurface == VK_NULL_HANDLE)
+    {
+        return;
+    }
+
+    QTreeWidget *treeWidget = ui.treeWidgetSurface;
+    treeWidget->clear();
+
+    // Surface capabilities
+    VkSurfaceCapabilitiesKHR surfaceCaps;
+    if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device->device, vkSurface, &surfaceCaps) == VK_SUCCESS)
+    {
+        QTreeWidgetItem *surfaceCapsItem = addTreeItem(treeWidget->invisibleRootItem(), "Surface Capabilities", "");
+        QTreeWidgetItem *flagsItem;
+
+        // Usage flags
+        flagsItem = addTreeItem(surfaceCapsItem, "Supported usage flags", "");
+        if (surfaceCaps.supportedUsageFlags == 0)
+        {
+            addTreeItem(flagsItem, "none", "");
+        }
+        else
+        {
+            addFlagTreeItem(flagsItem, "TRANSFER_SRC_BIT", (VK_IMAGE_USAGE_TRANSFER_SRC_BIT & surfaceCaps.supportedUsageFlags));
+            addFlagTreeItem(flagsItem, "TRANSFER_DST_BIT", (VK_IMAGE_USAGE_TRANSFER_DST_BIT & surfaceCaps.supportedUsageFlags));
+            addFlagTreeItem(flagsItem, "SAMPLED_BIT", (VK_IMAGE_USAGE_SAMPLED_BIT & surfaceCaps.supportedUsageFlags));
+            addFlagTreeItem(flagsItem, "STORAGE_BIT", (VK_IMAGE_USAGE_STORAGE_BIT & surfaceCaps.supportedUsageFlags));
+            addFlagTreeItem(flagsItem, "COLOR_ATTACHMENT_BIT", (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT & surfaceCaps.supportedUsageFlags));
+            addFlagTreeItem(flagsItem, "DEPTH_STENCIL_ATTACHMENT_BIT", (VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT & surfaceCaps.supportedUsageFlags));
+            addFlagTreeItem(flagsItem, "TRANSIENT_ATTACHMENT_BIT", (VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT & surfaceCaps.supportedUsageFlags));
+            addFlagTreeItem(flagsItem, "USAGE_INPUT_ATTACHMENT_BIT", (VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT & surfaceCaps.supportedUsageFlags));
+        }
+
+        // Transform flags
+        flagsItem = addTreeItem(surfaceCapsItem, "Supported transforms", "");
+        if (surfaceCaps.supportedTransforms == 0)
+        {
+            addTreeItem(flagsItem, "none", "");
+        }
+        else
+        {
+            addFlagTreeItem(flagsItem, "IDENTITY_BIT_KHR", (VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR & surfaceCaps.supportedTransforms));
+            addFlagTreeItem(flagsItem, "ROTATE_90_BIT_KHR", (VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR & surfaceCaps.supportedTransforms));
+            addFlagTreeItem(flagsItem, "ROTATE_180_BIT_KHR", (VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR & surfaceCaps.supportedTransforms));
+            addFlagTreeItem(flagsItem, "ROTATE_270_BIT_KHR", (VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR & surfaceCaps.supportedTransforms));
+            addFlagTreeItem(flagsItem, "HORIZONTAL_MIRROR_BIT_KHR", (VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR & surfaceCaps.supportedTransforms));
+            addFlagTreeItem(flagsItem, "HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR", (VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR & surfaceCaps.supportedTransforms));
+            addFlagTreeItem(flagsItem, "HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR", (VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR & surfaceCaps.supportedTransforms));
+            addFlagTreeItem(flagsItem, "HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR", (VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR & surfaceCaps.supportedTransforms));
+            addFlagTreeItem(flagsItem, "INHERIT_BIT_KHR", (VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR & surfaceCaps.supportedTransforms));
+        }
+
+        // Composite alpha
+        flagsItem = addTreeItem(surfaceCapsItem, "Composite alpha flags", "");
+        if (surfaceCaps.supportedCompositeAlpha == 0)
+        {
+            addTreeItem(flagsItem, "none", "");
+        }
+        else
+        {
+            addFlagTreeItem(flagsItem, "OPAQUE_BIT", (VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR & surfaceCaps.supportedCompositeAlpha));
+            addFlagTreeItem(flagsItem, "PRE_MULTIPLIED_BIT", (VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR & surfaceCaps.supportedCompositeAlpha));
+            addFlagTreeItem(flagsItem, "POST_MULTIPLIED_BIT", (VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR & surfaceCaps.supportedCompositeAlpha));
+            addFlagTreeItem(flagsItem, "INHERIT_BIT", (VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR & surfaceCaps.supportedCompositeAlpha));
+        }
+
+    }
+
+
+    // Surface modes
+    // (VKAPI_PTR *PFN_vkGetPhysicalDeviceSurfacePresentModesKHR)(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t* pPresentModeCount, VkPresentModeKHR* pPresentModes);
+    uint32_t presentModeCount;
+    QTreeWidgetItem *modesItem = addTreeItem(treeWidget->invisibleRootItem(), "Present modes", "");
+    if (vkGetPhysicalDeviceSurfacePresentModesKHR(device->device, vkSurface, &presentModeCount, nullptr) == VK_SUCCESS)
+    {
+        if (presentModeCount > 0)
+        {
+            std::vector<VkPresentModeKHR> presentModes;
+            presentModes.resize(presentModeCount);
+            if (vkGetPhysicalDeviceSurfacePresentModesKHR(device->device, vkSurface, &presentModeCount, presentModes.data()) == VK_SUCCESS)
+            {
+                for (auto presentMode : presentModes)
+                {
+                    addTreeItem(modesItem, vulkanResources::presentModeKHRString(presentMode), "");
+                }
+            }
+        }
+        else
+        {
+            addTreeItem(modesItem, "none", "");
+        }
+    }
+
+    // Surface formats
+    uint32_t surfaceFormatCount;
+    QTreeWidgetItem *formatsItem = addTreeItem(treeWidget->invisibleRootItem(), "Surface formats", "");
+    if (vkGetPhysicalDeviceSurfaceFormatsKHR(device->device, vkSurface, &surfaceFormatCount, nullptr) == VK_SUCCESS)
+    {
+        if (surfaceFormatCount > 0)
+        {
+            std::vector<VkSurfaceFormatKHR> surfaceFormats;
+            surfaceFormats.resize(surfaceFormatCount);
+            if (vkGetPhysicalDeviceSurfaceFormatsKHR(device->device, vkSurface, &surfaceFormatCount, surfaceFormats.data()) == VK_SUCCESS)
+            {
+                uint32_t index = 0;
+                for (auto surfaceFormat : surfaceFormats)
+                {
+                    QTreeWidgetItem *formatItem = addTreeItem(formatsItem, std::to_string(index), "");
+                    addTreeItem(formatItem, "Format", (vulkanResources::formatString(surfaceFormat.format)));
+                    addTreeItem(formatItem, "Color space", (vulkanResources::colorSpaceKHRString(surfaceFormat.colorSpace)));
+                    index++;
+                }
+            }
+        }
+        else
+        {
+            addTreeItem(formatsItem, "none", "");
+        }
+    }
+
+    // move to function
+
+    for (int i = 0; i < treeWidget->columnCount(); i++)
+    {
+        treeWidget->header()->setSectionResizeMode(i, QHeaderView::ResizeToContents);
+    }
+
+}
+
 /// <summary>
 ///	Initialize vulkan and dome some initial setup
 /// </summary>
@@ -346,6 +516,20 @@ bool vulkanCapsViewer::initVulkan()
 		instanceInfo.globalLayers.push_back(layer);
 	}
 
+    std::vector<const char*> enabledExtensions = { VK_KHR_SURFACE_EXTENSION_NAME };
+
+    // Platform specific surface extensions
+#if defined(_WIN32)
+    enabledExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#elif defined(__ANDROID__)
+    enabledExtensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
+#elif defined(__linux__)
+    enabledExtensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+    // todo : wayland etc.
+#endif
+
+    instanceCreateInfo.enabledExtensionCount = (uint32_t)enabledExtensions.size();
+    instanceCreateInfo.ppEnabledExtensionNames = enabledExtensions.data();
 
 	// Global extensions
 	getGlobalExtensions();
@@ -371,6 +555,21 @@ bool vulkanCapsViewer::initVulkan()
     loadVulkanFunctions(vkInstance);
 #endif
 
+    // surface properties (wip)
+
+#if defined(_WIN32)
+    VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
+    surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    surfaceCreateInfo.hinstance =  (HINSTANCE)::GetModuleHandle(NULL);
+    surfaceCreateInfo.hwnd = (HWND)this->winId();;
+    vkRes = vkCreateWin32SurfaceKHR(vkInstance, &surfaceCreateInfo, nullptr, &vkSurface);
+#elif defined(__ANDROID__)
+    VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
+    // todo : find a way of gettig the nativewindow from the Qt window (it's sadly not straight-forward)
+    //surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+    //surfaceCreateInfo.window = reinterpret_cast<ANativeWindow*>(win);
+    //vkRes = vkCreateAndroidSurfaceKHR(vkInstance, &surfaceCreateInfo, NULL, &vkSurface);
+#endif
     displayGlobalLayers(ui.treeWidgetGlobalLayers);
     displayGlobalExtensions();
 
@@ -406,17 +605,7 @@ void vulkanCapsViewer::getGPUinfo(VulkanDeviceInfo *GPU, uint32_t id, VkPhysical
         queueCreateInfos.push_back(queueCreateInfo);
 	}
 
-	// Enable all available extensions
-    /*
-	std::vector<const char*> enabledExtensions;
-	for (auto& ext : GPU->extensions)
-	{
-		enabledExtensions.push_back(ext.extensionName);
-	}
-    */
-
 	// Init device
-
 	VkDeviceCreateInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	info.pNext = NULL;
@@ -425,8 +614,6 @@ void vulkanCapsViewer::getGPUinfo(VulkanDeviceInfo *GPU, uint32_t id, VkPhysical
 	info.pEnabledFeatures = NULL;
 	info.ppEnabledLayerNames = NULL;
     info.enabledLayerCount = 0;
-//    info.enabledExtensionCount = enabledExtensions.size();
-//    info.ppEnabledExtensionNames = enabledExtensions.data();
 
 	vkRes = vkCreateDevice(GPU->device, &info, nullptr, &GPU->dev);
 
@@ -491,35 +678,6 @@ void vulkanCapsViewer::getGPUs()
 	}	
 }
 
-QTreeWidgetItem *addTreeItem(QTreeWidgetItem *parent, std::string key, std::string value)
-{
-	QTreeWidgetItem *newItem = new QTreeWidgetItem(parent);
-	newItem->setText(0, QString::fromStdString(key));
-	newItem->setText(1, QString::fromStdString(value));
-	parent->addChild(newItem);
-	return newItem;
-}
-
-QTreeWidgetItem *addTreeItemVkBool32(QTreeWidgetItem *parent, std::string key, VkBool32 value)
-{
-	QTreeWidgetItem *newItem = new QTreeWidgetItem(parent);
-	newItem->setText(0, QString::fromStdString(key));
-	newItem->setText(1, (value) ? "true" : "false");
-	newItem->setTextColor(1, (value) ? QColor::fromRgb(0, 128, 0) : QColor::fromRgb(255, 0, 0));
-	parent->addChild(newItem);
-	return newItem;
-}
-
-void addFlagTreeItem(QTreeWidgetItem *parent, QString flagName, bool flag)
-{
-	if (flag)
-	{
-		QTreeWidgetItem *newItem = new QTreeWidgetItem(parent);
-		newItem->setText(0, flagName);
-		parent->addChild(newItem);
-	}
-}
-
 /// <summary>
 ///	Display information on given device
 /// </summary>
@@ -538,6 +696,8 @@ void vulkanCapsViewer::displayDevice(int index)
 	displayDeviceExtensions(&device);
 	displayDeviceFormats(&device);
 	displayDeviceQueues(&device);
+
+    displaySurfaceProperties(&device);
 
 	checkReportDatabaseState();
 }
@@ -683,16 +843,6 @@ void vulkanCapsViewer::displayDeviceLayers(VulkanDeviceInfo *device)
 	}
 	for (int i = 0; i < treeWidget->columnCount(); i++)
 		treeWidget->header()->setSectionResizeMode(i, QHeaderView::ResizeToContents);
-}
-
-void addFlagModelItem(QStandardItem *parent, QString flagName, bool flag)
-{
-	if (flag)
-	{
-		QList<QStandardItem *> flagItems;
-		flagItems << new QStandardItem(flagName);
-		parent->appendRow(flagItems);
-	}
 }
 
 void vulkanCapsViewer::displayDeviceFormats(VulkanDeviceInfo *device)
